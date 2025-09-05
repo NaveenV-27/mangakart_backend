@@ -1,18 +1,25 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import connectMongo from './config/mongoConfig';
 import connectMySQL from './config/mysqlConfig';
-import cloudinary from './config/cloudinary';
+import mangaProfile from './api/mangaProfile';
+import userProfile from './api/userProfile';
+// import cloudinary from './config/cloudinary';
+import cookieParser from "cookie-parser";
+import { validateUser } from './middlewares/validator';
+import dotenv from 'dotenv';
 
 dotenv.config();
 const app = express();
+app.use(cookieParser());
 app.use(cors());
 app.use(express.json());
+app.use("/api/manga", mangaProfile);
+app.use("/api/users", validateUser, userProfile);
 
 // Connect to databases
-// connectMongo();
-// connectMySQL();
+connectMongo();
+connectMySQL();
 
 // Test route
 app.get('/', (req, res) => {
