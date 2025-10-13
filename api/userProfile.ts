@@ -25,12 +25,17 @@ userRouter.post("/user_profile", (req : Request, res : Response) => {
         console.error(err);
         res.send(err);
     }
-}) 
+});
 
 // userRouter.post("/get_user_data", )
 userRouter.post("/create_user", (req : Request, res : Response) => {
   console.log("Body:", req.body);
   res.send("Theres still time..");
-}
-)
+});
+
+
+userRouter.post("/login", (req : Request, res : Response) => {
+    console.log("Body:", req.body);
+    res.send("Theres still time..");
+})
 export default userRouter;

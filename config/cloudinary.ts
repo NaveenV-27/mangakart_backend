@@ -8,6 +8,13 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-console.log("Connected to cloudinary");
+
+cloudinary.api.ping((error, result) => {
+  if (error) {
+    console.log("Cloudinary connection failed:", error);
+  } else {
+    console.log("Cloudinary connected:", result.status); // Should be 'ok'
+  }
+});
 
 export default cloudinary;
