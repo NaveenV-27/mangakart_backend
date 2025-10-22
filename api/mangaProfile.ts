@@ -1,9 +1,8 @@
 import express from "express";
 import { Router, Request, Response, NextFunction } from 'express';
 import MangaProfile from "../MongoModels/Manga";
-import volumeProfile from "../MongoModels/Volume";
-import cloudinary from '../config/cloudinary';
 import multer from "multer";
+import cloudinary from '../config/cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 interface Manga {
@@ -32,10 +31,10 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-const mangaRouter = express.Router();
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
 }
+const mangaRouter = express.Router();
 
 // mangaRouter.post(
 //   '/upload-image',
@@ -137,47 +136,6 @@ mangaRouter.post(
   }
 );
 
-mangaRouter.post(
-  "/create_volume",
-  upload.single('cover_image'), // match the input file field name from the form
-  async (req: MulterRequest, res: Response, next: NextFunction) => {
-    try {
-      console.log("Request recieved:", req.body);
-      const {
-        title,
-        price,
-        description,
-        cover_image_url,
-        stock,
-        manga_id,
-        volume_number,
-      } = req.body;
-      
-      const mm = title
-        .split(' ')
-        .map((word: string) => word.charAt(0).toUpperCase())
-        .join('');
-      const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
-      const volume_id = `VOL${mm}${randomDigits}`;
-
-      const payload = {
-        volume_id,
-        manga_id,
-        volume_title : title,
-        description,
-        stock,
-        price,
-        cover_image : req.file ? req.file.path : cover_image_url,
-        volume_number,
-      };
-      const response = await volumeProfile.create(payload);
-      console.log("Volume created : ", response);
-      res.json({ message: 'Volume created successfully', volume_id, data: response });
-    } catch (err) {
-      next(err);
-    }
-})
-
 mangaRouter.post("/get_single_manga", async (req : Request, res : Response, next: NextFunction) => {
   try{
 
@@ -210,19 +168,7 @@ mangaRouter.post("/search_manga", async (req : Request, res : Response, next: Ne
   }
 })
 
-mangaRouter.post("/get_random_volumes", async (req : Request, res : Response, next: NextFunction) => {
-  try {
-    const limit = req.body?.limit || 6;
-    const randomVolumes = await volumeProfile.aggregate([{ $sample: { size: limit } }]);
-    res.json({
-      message: "Random volumes fetched successfully",
-      volumes: randomVolumes,
-    })
-    console.log("Random volumes: ", randomVolumes);
-  } catch (err) {
-    next(err);
-  }
-})
+
 
 
 // Error handling middleware (must be added after routes)

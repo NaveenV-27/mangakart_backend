@@ -1,6 +1,7 @@
 import express from "express";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import mysql from "mysql2";
 
 const userRouter = express.Router();
 userRouter.post("/user_profile", (req : Request, res : Response) => {
@@ -36,6 +37,7 @@ userRouter.post("/create_user", (req : Request, res : Response) => {
 
 userRouter.post("/login", (req : Request, res : Response) => {
     console.log("Body:", req.body);
+    
     res.send("Theres still time..");
 })
 export default userRouter;
