@@ -9,19 +9,27 @@ import cookieParser from "cookie-parser";
 import { validateUser } from './middlewares/validator';
 import dotenv from 'dotenv';
 import volumeProfile from './api/volumeProfile';
+import adminProfile from './api/adminProfile';
 
 dotenv.config();
 const app = express();
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+    origin:
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : "",
+
+    credentials: true,
+  }));
 app.use(express.json());
 app.use("/api/manga", mangaProfile);
 app.use("/api/volumes", volumeProfile);
-app.use("/api/users", validateUser, userProfile);
+app.use("/api/users", userProfile);
+app.use("/api/admin", adminProfile);
 
 // Connect to databases
 connectMongo();
-connectMySQL();
 
 // Test route
 app.get('/', (req, res) => {
@@ -33,5 +41,5 @@ app.post('/get-response', (req, res) => {
 });
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

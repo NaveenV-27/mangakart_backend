@@ -57,9 +57,9 @@ const mangaRouter = express.Router();
 // );
 
 
-mangaRouter.post("/manga_profile", async (req : Request, res : Response, next: NextFunction) => {
+mangaRouter.post("/get_random_manga", async (req : Request, res : Response, next: NextFunction) => {
     const limit = req.body?.limit || 10;
-    const manga = await MangaProfile.find({}).sort({title : -1}).limit(limit);
+    const manga = await MangaProfile.aggregate([{ $sample: { size: limit } }]).sort({title : -1});
     // console.log("Manga fetched:", manga);
     res.send(manga);
 });
@@ -67,8 +67,8 @@ mangaRouter.post("/manga_profile", async (req : Request, res : Response, next: N
 mangaRouter.post("/find_manga_by_genre", async (req : Request, res : Response, next: NextFunction) => {
   try {
     const genre = req.body.genre;
-    const genreResults = await MangaProfile.find({genres : genre});
-    // console.log("Manga fetched:", genreResults);
+    console.log("Manga fetched:", genre);
+    const genreResults = await MangaProfile.find({genres: { $regex: new RegExp(`^${genre}$`, 'i') }});
     res.send(genreResults);
   } catch (err) {
     next(err);
