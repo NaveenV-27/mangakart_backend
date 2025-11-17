@@ -1,12 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import connectMongo from './config/mongoConfig';
-import connectMySQL from './config/mysqlConfig';
 import mangaProfile from './api/mangaProfile';
 import userProfile from './api/userProfile';
 // import cloudinary from './config/cloudinary';
 import cookieParser from "cookie-parser";
-import { validateUser } from './middlewares/validator';
 import dotenv from 'dotenv';
 import volumeProfile from './api/volumeProfile';
 import adminProfile from './api/adminProfile';

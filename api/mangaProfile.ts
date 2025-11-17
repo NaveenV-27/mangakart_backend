@@ -3,7 +3,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import MangaProfile from "../MongoModels/Manga";
 import multer from "multer";
 import cloudinary from '../config/cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 interface Manga {
     manga_id: string;
@@ -21,15 +21,15 @@ interface Manga {
 
 
 // Configure multer-storage-cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'avif'],
-  } as any,                   
-});
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: {
+//     folder: 'uploads',
+//     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'avif'],
+//   } as any,                   
+// });
 
-const upload = multer({ storage: storage });
+// const upload = multer({ storage: storage });
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -75,66 +75,66 @@ mangaRouter.post("/find_manga_by_genre", async (req : Request, res : Response, n
   }
 });
 
-mangaRouter.post(
-  "/create_manga",
-  upload.single('cover_image'), // match the input file field name from the form
-  async (req: MulterRequest, res: Response, next: NextFunction) => {
-    try {
-      console.log('Received:', req.body);
+// mangaRouter.post(
+//   "/create_manga",
+//   upload.single('cover_image'), // match the input file field name from the form
+//   async (req: MulterRequest, res: Response, next: NextFunction) => {
+//     try {
+//       console.log('Received:', req.body);
 
-      const {
-        title,
-        description,
-        authors,
-        genres,
-        rating,
-        cover_image_url,
-      } = req.body;
+//       const {
+//         title,
+//         description,
+//         authors,
+//         genres,
+//         rating,
+//         cover_image_url,
+//       } = req.body;
 
-      if (!title) {
-        return res.status(400).json({ error: 'Title is required' });
-      }
+//       if (!title) {
+//         return res.status(400).json({ error: 'Title is required' });
+//       }
 
-      // Parse JSON stringified arrays safely
-      let parsedAuthors: string[] = [];
-      let parsedGenres: string[] = [];
-      try {
-        parsedAuthors = authors ? JSON.parse(authors) : [];
-        parsedGenres = genres ? JSON.parse(genres) : [];
-      } catch (e) {
-        return res.status(400).json({ error: 'Invalid authors or genres format' });
-      }
+//       // Parse JSON stringified arrays safely
+//       let parsedAuthors: string[] = [];
+//       let parsedGenres: string[] = [];
+//       try {
+//         parsedAuthors = authors ? JSON.parse(authors) : [];
+//         parsedGenres = genres ? JSON.parse(genres) : [];
+//       } catch (e) {
+//         return res.status(400).json({ error: 'Invalid authors or genres format' });
+//       }
 
-      // Generate manga_id
-      const mm = title
-        .split(' ')
-        .map((word: string) => word.charAt(0).toUpperCase())
-        .join('');
-      const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
-      const manga_id = `MAN${mm}${randomDigits}`;
+//       // Generate manga_id
+//       const mm = title
+//         .split(' ')
+//         .map((word: string) => word.charAt(0).toUpperCase())
+//         .join('');
+//       const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+//       const manga_id = `MAN${mm}${randomDigits}`;
 
-      const payload: Manga = {
-        title,
-        description,
-        authors: parsedAuthors,
-        genres: parsedGenres,
-        rating: parseFloat(rating),
-        manga_id,
-        created_at: new Date(),
-        // Use uploaded file path if file present else fallback to image URL
-        cover_image: req.file ? req.file.path : cover_image_url,
-      };
+//       const payload: Manga = {
+//         title,
+//         description,
+//         authors: parsedAuthors,
+//         genres: parsedGenres,
+//         rating: parseFloat(rating),
+//         manga_id,
+//         created_at: new Date(),
+//         // Use uploaded file path if file present else fallback to image URL
+//         cover_image: req.file ? req.file.path : cover_image_url,
+//       };
 
-      console.log('Payload:', payload);
+//       console.log('Payload:', payload);
 
-      const response = await MangaProfile.create(payload);
+//       const response = await MangaProfile.create(payload);
 
-      res.json({ message: 'Manga created successfully', manga_id, data: response });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
+//       res.json({ message: 'Manga created successfully', manga_id, data: response });
+//     } catch (err) {
+//       next(err);
+//     }
+//   }
+// );
 
 mangaRouter.post("/get_single_manga", async (req : Request, res : Response, next: NextFunction) => {
   try{
