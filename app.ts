@@ -37,7 +37,9 @@ app.post('/get-response', (req, res) => {
   console.log(req.body);  
   res.json({ message: 'Mangakart API running on app.ts!' });
 });
+
+const domain = process.env.DOMAIN || "localhost"
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://${domain}:${PORT}`);
 });
