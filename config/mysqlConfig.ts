@@ -1,66 +1,56 @@
-import { createPool, Pool, createConnection, Connection } from "mysql";
+import { createPool, Pool, PoolConnection } from "mysql2";
 import dotenv from "dotenv";
 
-// Load environment variables from .env file
 dotenv.config();
+
+// Define interface for environment variables
+interface MySQLEnv {
+  MYSQL_HOST_DEV: string;
+  MYSQL_PORT_DEV: string;
+  MYSQL_USER_DEV: string;
+  MYSQL_PASSWORD_DEV: string;
+  MYSQL_DATABASE_DEV: string;
+
+  MYSQL_HOST_PRODUCTION: string;
+  MYSQL_PORT_PRODUCTION: string;
+  MYSQL_USER_PRODUCTION: string;
+  MYSQL_PASSWORD_PRODUCTION: string;
+  MYSQL_DATABASE_PRODUCTION: string;
+
+  NODE_ENV: "development" | "production";
+}
+
+// Typecast process.env
+const env = process.env as unknown as MySQLEnv;
 
 // Create MySQL connection pool
 const mysqlPool: Pool = createPool({
-  host:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_HOST_DEV
-      : process.env.MYSQL_HOST_PRODUCTION,
-  port: parseInt(process.env.MYSQL_PORT || "3306"),
-  user:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_USER_DEV
-      : process.env.MYSQL_USER_PRODUCTION,
-  database:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_DATABASE_DEV
-      : process.env.MYSQL_DATABASE_PRODUCTION,
-  password:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_PASSWORD_DEV
-      : process.env.MYSQL_PASSWORD_PRODUCTION,
+  host: env.NODE_ENV === "development" ? env.MYSQL_HOST_DEV : env.MYSQL_HOST_PRODUCTION,
+  port: parseInt(env.NODE_ENV === "development" ? env.MYSQL_PORT_DEV : env.MYSQL_PORT_PRODUCTION, 10),
+  user: env.NODE_ENV === "development" ? env.MYSQL_USER_DEV : env.MYSQL_USER_PRODUCTION,
+  password: env.NODE_ENV === "development" ? env.MYSQL_PASSWORD_DEV : env.MYSQL_PASSWORD_PRODUCTION,
+  database: env.NODE_ENV === "development" ? env.MYSQL_DATABASE_DEV : env.MYSQL_DATABASE_PRODUCTION,
   connectionLimit: 10,
+  multipleStatements: true,
 });
 
-// Create a connection for transactions
-export const transactionConnection: Connection = createConnection({
-  host:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_HOST_DEV
-      : process.env.MYSQL_HOST_PRODUCTION,
-  port: parseInt(process.env.MYSQL_PORT || "3306"), // Convert port to number
-  user:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_USER_DEV
-      : process.env.MYSQL_USER_PRODUCTION,
-  database:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_DATABASE_DEV
-      : process.env.MYSQL_DATABASE_PRODUCTION,
-  password:
-    process.env.NODE_ENV === "development"
-      ? process.env.MYSQL_PASSWORD_DEV
-      : process.env.MYSQL_PASSWORD_PRODUCTION,
-});
+// Use promise-based pool for async/await queries
+export const db = mysqlPool.promise();
 
-// Log connection status
-mysqlPool.getConnection((err, connection) => {
+// Optional: separate connection for transactions (typed)
+export const transactionConnection: PoolConnection = mysqlPool.getConnection((err: any, connection: any) => {
   if (err) {
-    console.error("MySQL Connection Error", err.stack, err.message);
-    process.exit(1); // Terminate application on connection error
+    console.error("MySQL Connection Error", err);
+    process.exit(1);
   }
   console.log("Connected to MySQL");
-  connection.release(); // Release the connection
-});
+  connection.release();
+}) as unknown as PoolConnection;
 
-// Handle unexpected errors in the connection pool
-mysqlPool.on("error", (err) => {
-  console.error("MySQL Pool Error", err.stack);
-  process.exit(1); // Terminate application on pool error
+// Handle unexpected errors in the pool
+mysqlPool.on("error", (err: any) => {
+  console.error("MySQL Pool Error", err);
+  process.exit(1);
 });
 
 export default mysqlPool;
