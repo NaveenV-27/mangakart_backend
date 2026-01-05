@@ -43,7 +43,8 @@ class AdminProfileRepo {
 				const payLoad = jwt.sign(
 					{
 						username: username,
-						email: email,
+						// email: email,
+						admin_id: adminId,
 					},
 					process.env.JWT_SECRET!,
 					{ expiresIn: "7d" }
@@ -53,7 +54,7 @@ class AdminProfileRepo {
 					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 1 day
 				})
 
-				res.cookie("ROLE",  "ADMIN",{
+				res.cookie("ROLE", "ADMIN", {
 					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
 				})
 				return callback({
@@ -85,10 +86,10 @@ class AdminProfileRepo {
 
 			const query = `SELECT EXISTS(SELECT 1 FROM admins WHERE username = ?) AS username_exists;`;
 			const values = [username];
-			const response = await queryAsync({sql: query, values});
+			const response = await queryAsync({ sql: query, values });
 
-			const result = Array.isArray(response)? response[0].username_exists : response;
-			if(result === 0) {
+			const result = Array.isArray(response) ? response[0].username_exists : response;
+			if (result === 0) {
 
 				return callback({
 					apiSuccess: 1,
@@ -104,11 +105,96 @@ class AdminProfileRepo {
 
 			}
 
-		} catch (error : any) {
+		} catch (error: any) {
 			return callback({
 				apiSuccess: -1,
 				message: error.message,
 			});
+		}
+	}
+
+	static async adminLogin(
+		data: { identifier: string; password: string },
+		res: Response,
+		callback: any
+	) {
+		try {
+
+			const {
+				identifier,
+				password
+			} = data;
+
+			const query = `SELECT admin_id, username, full_name, password_hash, email FROM admins WHERE admin_id = ? OR username = ?`;
+			const values = [identifier, identifier];
+
+			console.log(query, values);
+
+			const response: any = await queryAsync({ sql: query, values });
+			console.log("Response:", response);
+			const passwordHash = Array.isArray(response) ? response[0].password_hash : "";
+			const email = Array.isArray(response) ? response[0].email : "";
+			const full_name = Array.isArray(response) ? response[0].full_name : "";
+			const admin_id = Array.isArray(response) ? response[0].admin_id : "";
+			const username = Array.isArray(response) ? response[0].username : "";
+			const matched = await bcrypt.compare(password, passwordHash);
+			if (matched) {
+				const payLoad = jwt.sign(
+					{
+						username: username,
+						admin_id: admin_id,
+					},
+					process.env.JWT_SECRET!,
+					{ expiresIn: "1d" }
+				);
+				res.cookie("ADMIN", payLoad, {
+					httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
+					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 7 days
+				})
+				res.cookie("ROLE", "ADMIN", {
+					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
+				})
+				res.cookie("Name", full_name?.split(" ")?.['0'], {
+					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
+				})
+				return callback({
+					apiSuccess: 1,
+					message: "login successful",
+				})
+			} else {
+				return callback({
+					apiSuccess: 0,
+					message: "Incorrect password",
+				})
+			}
+		} catch (error: any) {
+			return callback({
+				apiSuccess: -1,
+				message: error.message,
+			});
+		}
+	}
+
+	static async getAdminProfile(
+		username: string,
+		admin_id: string,
+		callback: any
+	) {
+		try {
+			const query = 'SELECT username, admin_id, full_name, email, phone_number, gender, age from admins WHERE admin_id = ? OR username = ?';
+			const values = [admin_id, username];
+			const response : any = await queryAsync({sql: query, values});
+			console.log("user profile response", response);
+			return callback({
+				apiSuccess: 1,
+				message: "fetched user profile successfully",
+				data: response
+			})
+		} catch (error: any) {
+			return callback({
+				apiSuccess: -1,
+				message: error.message
+			})
 		}
 	}
 }

@@ -1,4 +1,3 @@
-// middlewares/authMiddleware.ts
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
@@ -9,7 +8,9 @@ export const validateUser = (
 ) => {
   const secret = process.env.JWT_SECRET || "default_secret";
 
-  const token = req.cookies?.user;
+  const token = req.cookies?.ADMIN || req.cookies?.USER;
+  const role = req.cookies?.ROLE;
+  console.log("the role", role);
   console.log(token);
 
   if (!token) {
@@ -18,11 +19,13 @@ export const validateUser = (
 
   try {
     const decoded: any = jwt.verify(token, secret);
-    console.log("the user", decoded);
-    req.body.user_name = decoded?.user_name;
-    req.body.password = decoded?.password;
+    console.log("the user", decoded, decoded?.username);
+    req.body = req.body || {};
+    req.body.username = decoded?.username;
+    req.body.admin_id = decoded?.admin_id;
     next();
   } catch (error) {
+    console.error("Token verification failed:", error);
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };

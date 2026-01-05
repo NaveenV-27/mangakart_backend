@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { asyncErrorHandler } from "../middlewares/asyncErrorHandler";
 import UserProfileRepo from "../repo/userRepo";
+import { validateUser } from "../middlewares/validator";
 // import multer from "multer";
 // import cloudinary from '../config/cloudinary';
 // import { CloudinaryStorage } from 'multer-storage-cloudinary';
@@ -81,16 +82,37 @@ userRouter.post("/check_email",
 	}
 ));
 
-
 userRouter.post("/login",
 	asyncErrorHandler(async (req: Request, res: Response) => {
 		const data = req.body;
-		console.log("IP:", req.ip);
 		await UserProfileRepo.userLogin( data, res,  (response: any) => {
 			if (response.apiSuccess === 1) return res.status(200).json(response);
 			if (response.apiSuccess === -1) return res.status(500).json(response);
 			return res.status(400).json(response);
 		});
 	}
-))
+));
+
+userRouter.post("/logout", async (req:Request, res:Response) => {
+	try {
+		res.clearCookie("USER");
+		res.clearCookie("ROLE");
+		res.clearCookie("Name");
+		console.log("Logged out successfully");
+		res.send("Logged out successfully");
+	} catch (error) {
+		console.log("Error during logout", error);
+	}
+})
+
+userRouter.post("/get_user_profile", validateUser,
+asyncErrorHandler(async (req: Request, res: Response) => {
+	const username = req.body.username;
+	await UserProfileRepo.getUserProfile( username,  (response: any) => {
+		if (response.apiSuccess === 1) return res.status(200).json(response);
+		if (response.apiSuccess === -1) return res.status(500).json(response);
+		return res.status(400).json(response);
+	});
+	}
+));
 export default userRouter;
