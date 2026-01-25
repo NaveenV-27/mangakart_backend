@@ -53,9 +53,9 @@ adminRouter.post("/logout", async (req:Request, res:Response) => {
 })
 
 adminRouter.post("/get_admin_profile", validateUser,
-	asyncErrorHandler(async (req: Request, res: Response) => {
-		const username = req.body.username;
-		const admin_id = req.body.admin_id;
+	asyncErrorHandler(async (req: any, res: Response) => {
+		const username = req.user.username;
+		const admin_id = req.user.admin_id;
 		await AdminProfileRepo.getAdminProfile( username, admin_id, (response: any) => {
 			if (response.apiSuccess === 1) return res.status(200).json(response);
 			if (response.apiSuccess === -1) return res.status(500).json(response);

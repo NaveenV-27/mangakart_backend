@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import dotenv from 'dotenv';
 import volumeProfile from './api/volumeProfile';
 import adminProfile from './api/adminProfile';
+import { validateUser } from './middlewares/validator';
 
 dotenv.config();
 const app = express();

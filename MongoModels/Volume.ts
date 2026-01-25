@@ -11,6 +11,10 @@ const VolumeProfile = new mongoose.Schema({
     // gallery: { type: [String], default: [] },
     price: { type: Number, required: true },
     stock: { type: Number, default: 0 },
+    created_by: {
+        type: String,
+        required: true
+    }
     // rating: { type: Number, default: 0 },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

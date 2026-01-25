@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
 export const validateUser = (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction
 ) => {
@@ -10,8 +10,8 @@ export const validateUser = (
 
   const token = req.cookies?.ADMIN || req.cookies?.USER;
   const role = req.cookies?.ROLE;
-  console.log("the role", role);
-  console.log(token);
+  // console.log("the role", role);
+  // console.log(token);
 
   if (!token) {
     return res.status(401).json({ message: "No auth token found" });
@@ -19,13 +19,16 @@ export const validateUser = (
 
   try {
     const decoded: any = jwt.verify(token, secret);
-    console.log("the user", decoded, decoded?.username);
-    req.body = req.body || {};
-    req.body.username = decoded?.username;
-    req.body.admin_id = decoded?.admin_id;
+    // console.log("the user", decoded, decoded?.username);
+    req.user = {
+      username: decoded.username,
+      admin_id: decoded.admin_id,
+      role: req.cookies?.ROLE,
+    };
+    console.log("Body:", req.body)
     next();
-  } catch (error) {
-    console.error("Token verification failed:", error);
+  } catch (error :any) {
+    console.error("Token verification failed:", error.message);
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };

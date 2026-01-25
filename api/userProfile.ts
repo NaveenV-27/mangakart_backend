@@ -106,8 +106,8 @@ userRouter.post("/logout", async (req:Request, res:Response) => {
 })
 
 userRouter.post("/get_user_profile", validateUser,
-asyncErrorHandler(async (req: Request, res: Response) => {
-	const username = req.body.username;
+asyncErrorHandler(async (req: any, res: Response) => {
+	const username = req.user.username;
 	await UserProfileRepo.getUserProfile( username,  (response: any) => {
 		if (response.apiSuccess === 1) return res.status(200).json(response);
 		if (response.apiSuccess === -1) return res.status(500).json(response);

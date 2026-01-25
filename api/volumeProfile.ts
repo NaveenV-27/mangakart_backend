@@ -1,8 +1,9 @@
 import express from "express";
 import { Router, Request, Response, NextFunction } from 'express';
 import volumeProfile from "../MongoModels/Volume";
-import multer from "multer";
-import cloudinary from '../config/cloudinary';
+import { validateUser } from "../middlewares/validator";
+// import multer from "multer";
+// import cloudinary from '../config/cloudinary';
 // import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 // Configure multer-storage-cloudinary
@@ -16,51 +17,55 @@ import cloudinary from '../config/cloudinary';
 
 // const upload = multer({ storage: storage });
 
-interface MulterRequest extends Request {
-  file?: Express.Multer.File;
-}
+// interface MulterRequest extends Request {
+//   file?: Express.Multer.File;
+// }
 const volumeRouter = express.Router();
 
-// volumeRouter.post(
-//   "/create_volume",
-//   upload.single('cover_image'), // match the input file field name from the form
-//   async (req: MulterRequest, res: Response, next: NextFunction) => {
-//     try {
-//       // console.log("Request recieved:", req.body);
-//       const {
-//         title,
-//         price,
-//         description,
-//         cover_image_url,
-//         stock,
-//         manga_id,
-//         volume_number,
-//       } = req.body;
-      
-//       const mm = title
-//         .split(' ')
-//         .map((word: string) => word.charAt(0).toUpperCase())
-//         .join('');
-//       const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
-//       const volume_id = `VOL${mm}${randomDigits}`;
+volumeRouter.post(
+  "/create_volume",
+  validateUser,
+  // upload.single('cover_image'), // match the input file field name from the form
+  async (req: any, res: Response, next: NextFunction) => {
+    try {
+      console.log("Request recieved:", req.body);
+      const {
+        title,
+        price,
+        description,
+        cover_image_url,
+        stock,
+        manga_id,
+        volume_number,
+      } = req.body;
 
-//       const payload = {
-//         volume_id,
-//         manga_id,
-//         volume_title : title,
-//         description,
-//         stock,
-//         price,
-//         cover_image : req.file ? req.file.path : cover_image_url,
-//         volume_number,
-//       };
-//       const response = await volumeProfile.create(payload);
-//       // console.log("Volume created : ", response);
-//       res.json({ message: 'Volume created successfully', volume_id, data: response });
-//     } catch (err) {
-//       next(err);
-//     }
-// })
+      const admin_id = req.user?.admin_id || "ADMIN001";
+      
+      const mm = title ? title
+        .split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase())
+        .join('') :"";
+      const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+      const volume_id = `VOL${mm}${randomDigits}`;
+
+      const payload = {
+        volume_id,
+        manga_id,
+        volume_title : title,
+        description,
+        stock,
+        price,
+        cover_image : req.file ? req.file.path : cover_image_url,
+        volume_number,
+        created_by: admin_id
+      };
+      const response = await volumeProfile.create(payload);
+      // console.log("Volume created : ", response);
+      res.json({ message: 'Volume created successfully', volume_id, data: response });
+    } catch (err) {
+      next(err);
+    }
+})
 
 volumeRouter.get("/get_random_volumes", async (req : Request, res : Response, next: NextFunction) => {
   try {

@@ -184,7 +184,7 @@ class AdminProfileRepo {
 			const query = 'SELECT username, admin_id, full_name, email, phone_number, gender, age from admins WHERE admin_id = ? OR username = ?';
 			const values = [admin_id, username];
 			const response : any = await queryAsync({sql: query, values});
-			console.log("user profile response", response);
+			// console.log("user profile response", response);
 			return callback({
 				apiSuccess: 1,
 				message: "fetched user profile successfully",

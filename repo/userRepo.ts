@@ -215,7 +215,7 @@ class UserProfileRepo {
 			const query = 'SELECT username, full_name, email, phone_number, gender, age from users WHERE username = ?';
 			const values = [username];
 			const response : any = await queryAsync({sql: query, values});
-			console.log("user profile response", response);
+			// console.log("user profile response", response);
 			return callback({
 				apiSuccess: 1,
 				message: "fetched user profile successfully",
