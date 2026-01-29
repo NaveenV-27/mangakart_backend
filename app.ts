@@ -3,6 +3,8 @@ import cors from 'cors';
 import connectMongo from './config/mongoConfig';
 import mangaProfile from './api/mangaProfile';
 import userProfile from './api/userProfile';
+import cartProfile from './api/cartProfile';
+import addressesProfile from './api/addressesProfile';
 // import cloudinary from './config/cloudinary';
 import cookieParser from "cookie-parser";
 import dotenv from 'dotenv';
@@ -26,6 +28,8 @@ app.use("/api/manga", mangaProfile);
 app.use("/api/volumes", volumeProfile);
 app.use("/api/users", userProfile);
 app.use("/api/admin", adminProfile);
+app.use("/api/cart", cartProfile);
+app.use("/api/addresses", addressesProfile);
 
 // Connect to databases
 connectMongo();
