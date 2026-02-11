@@ -139,10 +139,10 @@ mangaRouter.post(
 mangaRouter.post("/get_single_manga", async (req : Request, res : Response, next: NextFunction) => {
   try{
 
-    console.log(req.body);
+    // console.log(req.body);
     const manga = req.body.manga;
     const mangaResult = await MangaProfile.findOne({title : manga});
-    console.log(`Fetched results for ${manga}:`, mangaResult);
+    // console.log(`Fetched results for ${manga}:`, mangaResult);
     res.send(mangaResult);
   } catch (err) {
       next(err);

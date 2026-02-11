@@ -85,6 +85,7 @@ volumeRouter.post("/get_volumes_by_manga", async (req : Request, res : Response,
   try {
     const manga_id = req.body.manga_id;
     const limit = req.body?.limit || 10;
+    console.log("Fetching volumes for manga_id:", manga_id);
     const volumes = await volumeProfile.find({manga_id : manga_id}, {volume_id: 1, volume_title: 1, cover_image: 1, price: 1, volume_number: 1}).limit(limit).sort({volume_number : -1});
     res.json({
       volumes,
