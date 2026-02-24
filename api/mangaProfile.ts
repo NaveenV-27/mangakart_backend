@@ -149,6 +149,19 @@ mangaRouter.post("/get_single_manga", async (req : Request, res : Response, next
   }
 })
 
+mangaRouter.post("/get_all_manga", async (req : Request, res : Response, next: NextFunction) => {
+  try{
+
+    // console.log(req.body);
+    const manga = req.body.manga;
+    const mangaResult = await MangaProfile.findOne({title : manga});
+    // console.log(`Fetched results for ${manga}:`, mangaResult);
+    res.send(mangaResult);
+  } catch (err) {
+      next(err);
+  }
+})
+
 mangaRouter.post("/search_manga", async (req : Request, res : Response, next: NextFunction) =>{
   try {
     console.log("Request: ", req.body);

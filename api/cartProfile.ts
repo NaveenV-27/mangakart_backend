@@ -29,7 +29,7 @@ cartRouter.post(
 	asyncErrorHandler(async (req: any, res: Response) => {
 		const user_id = req.user.username;
 		await CartRepo.addItem(user_id, req.body, (response: any) => {
-			console.log("Add item to cart:", req.body, response);
+			// console.log("Add item to cart:", req.body, response);
 			return sendRepoResponse(res, response);
 		});
 	})
@@ -41,7 +41,7 @@ cartRouter.post(
 	asyncErrorHandler(async (req: any, res: Response) => {
 		const user_id = req.user.username;
 		await CartRepo.updateQuantity(user_id, req.body, (response: any) => {
-			console.log("Update cart quantity:", req.body, response);
+			// console.log("Update cart quantity:", req.body, response);
 			return sendRepoResponse(res, response);
 		});
 	})
