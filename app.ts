@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import volumeProfile from './api/volumeProfile';
 import adminProfile from './api/adminProfile';
 import { validateUser } from './middlewares/validator';
+import orderProfile from './api/orderProfile';
 
 dotenv.config();
 const app = express();
@@ -30,6 +31,7 @@ app.use("/api/users", userProfile);
 app.use("/api/admin", adminProfile);
 app.use("/api/cart", cartProfile);
 app.use("/api/addresses", addressesProfile);
+app.use("/api/orders", orderProfile);
 
 // Connect to databases
 connectMongo();
