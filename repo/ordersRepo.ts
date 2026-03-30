@@ -1,9 +1,112 @@
-import mysqlPool from "../config/mysqlConfig";
-import util from "util";
-
-const queryAsync = util.promisify(mysqlPool.query).bind(mysqlPool);
+import db from "../config/mysqlConfig";
 
 class ordersRepo {
+
+  // 🔥 CREATE ORDER
+  static async createOrder(data: any, callback: any) {
+    const connection = await db.getConnection();
+
+    try {
+      const {
+        user_id,
+        items,
+        shipping_name,
+        shipping_phone,
+        shipping_address,
+        shipping_city,
+        shipping_pincode,
+      } = data;
+
+      if (!user_id || !items || items.length === 0) {
+        return callback({
+          apiSuccess: 0,
+          message: "Invalid order data",
+        });
+      }
+
+      const order_id = `ORD${Date.now()}`;
+
+      const total_amount = items.reduce(
+        (sum: number, item: any) =>
+          sum + item.price * item.quantity,
+        0
+      );
+
+      await connection.beginTransaction();
+
+      // 🧾 Insert Order
+      const orderQuery = `
+        INSERT INTO orders (
+          order_id,
+          user_id,
+          total_amount,
+          order_status,
+          payment_status,
+          shipping_name,
+          shipping_phone,
+          shipping_address,
+          shipping_city,
+          shipping_pincode
+        ) VALUES (?, ?, ?, 'PLACED', 'PENDING', ?, ?, ?, ?, ?)
+      `;
+
+      await connection.execute(orderQuery, [
+        order_id,
+        user_id,
+        total_amount,
+        shipping_name,
+        shipping_phone,
+        shipping_address,
+        shipping_city,
+        shipping_pincode,
+      ]);
+
+      const itemQuery = `
+        INSERT INTO order_items (
+          order_id,
+          volume_id,
+          seller_id,
+          volume_title,
+          price_at_purchase,
+          quantity
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `;
+
+      for (const item of items) {
+        await connection.execute(itemQuery, [
+          order_id,
+          item.volume_id,
+          item.seller_id,
+          item.volume_title,
+          item.price,
+          item.quantity,
+        ]);
+      }
+
+      // ✅ COMMIT
+      await connection.commit();
+
+      return callback({
+        apiSuccess: 1,
+        message: "Order created successfully",
+        order_id,
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error creating order:", error);
+
+      return callback({
+        apiSuccess: 0,
+        message: "Failed to create order",
+      });
+
+    } finally {
+      connection.release();
+    }
+  }
+
+  // 🔍 GET ORDERS
   static async getOrders(user_id: string, callback: any) {
     try {
       const query = `
@@ -35,15 +138,11 @@ class ordersRepo {
         ORDER BY o.created_at DESC
       `;
 
-      const rows: any = await queryAsync({
-        sql: query,
-        values: [user_id],
-      });
+      const [rows]: any = await db.execute(query, [user_id]);
 
       const ordersMap: any = {};
 
       for (const row of rows) {
-        // Create order if not exists
         if (!ordersMap[row.order_id]) {
           ordersMap[row.order_id] = {
             order_id: row.order_id,
@@ -57,11 +156,10 @@ class ordersRepo {
             shipping_city: row.shipping_city,
             shipping_pincode: row.shipping_pincode,
             created_at: row.order_created_at,
-            orderItems: [], // 👈 nested items
+            orderItems: [],
           };
         }
 
-        // Push item if exists
         if (row.item_id) {
           ordersMap[row.order_id].orderItems.push({
             id: row.item_id,
@@ -81,8 +179,10 @@ class ordersRepo {
         orders: Object.values(ordersMap),
         message: "orders retrieved successfully",
       });
+
     } catch (error) {
       console.error("Error fetching orders:", error);
+
       return callback({
         apiSuccess: 0,
         message: "Failed to retrieve orders",

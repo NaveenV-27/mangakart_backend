@@ -1,6 +1,7 @@
 import express from "express";
 import { Router, Request, Response, NextFunction } from 'express';
 import MangaProfile from "../MongoModels/Manga";
+import { validateUser } from "../middlewares/validator";
 // import multer from "multer";
 // import cloudinary from '../config/cloudinary';
 // import { CloudinaryStorage } from 'multer-storage-cloudinary';
@@ -17,6 +18,7 @@ interface Manga {
     // stock: number;
     rating: number;
     created_at: Date;
+    created_by: string;
 }
 
 
@@ -33,6 +35,9 @@ interface Manga {
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
+  user?: {
+    admin_id: string;
+  }
 }
 const mangaRouter = express.Router();
 
@@ -77,6 +82,7 @@ mangaRouter.post("/find_manga_by_genre", async (req : Request, res : Response, n
 
 mangaRouter.post(
   "/create_manga",
+  validateUser,
   // upload.single('cover_image'), // match the input file field name from the form
   async (req: MulterRequest, res: Response, next: NextFunction) => {
     try {
@@ -121,6 +127,7 @@ mangaRouter.post(
         rating: parseFloat(rating),
         manga_id,
         created_at: new Date(),
+        created_by: req.user?.admin_id || "",
         // Use uploaded file path if file present else fallback to image URL
         cover_image: req.file ? req.file.path : cover_image_url,
       };

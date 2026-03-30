@@ -1,9 +1,8 @@
-import { createPool, Pool, PoolConnection } from "mysql2";
+import { createPool, Pool } from "mysql2/promise";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// Define interface for environment variables
 interface MySQLEnv {
   MYSQL_HOST_DEV: string;
   MYSQL_PORT_DEV: string;
@@ -11,46 +10,42 @@ interface MySQLEnv {
   MYSQL_PASSWORD_DEV: string;
   MYSQL_DATABASE_DEV: string;
 
-  MYSQL_HOST_PRODUCTION: string;
-  MYSQL_PORT_PRODUCTION: string;
-  MYSQL_USER_PRODUCTION: string;
-  MYSQL_PASSWORD_PRODUCTION: string;
-  MYSQL_DATABASE_PRODUCTION: string;
+  MYSQL_HOST_PROD: string;
+  MYSQL_PORT_PROD: string;
+  MYSQL_USER_PROD: string;
+  MYSQL_PASSWORD_PROD: string;
+  MYSQL_DATABASE_PROD: string;
 
   NODE_ENV: "development" | "production";
 }
 
-// Typecast process.env
 const env = process.env as unknown as MySQLEnv;
 
-// Create MySQL connection pool
-const mysqlPool: Pool = createPool({
-  host: env.NODE_ENV === "development" ? env.MYSQL_HOST_DEV : env.MYSQL_HOST_PRODUCTION,
-  port: parseInt(env.NODE_ENV === "development" ? env.MYSQL_PORT_DEV : env.MYSQL_PORT_PRODUCTION, 10),
-  user: env.NODE_ENV === "development" ? env.MYSQL_USER_DEV : env.MYSQL_USER_PRODUCTION,
-  password: env.NODE_ENV === "development" ? env.MYSQL_PASSWORD_DEV : env.MYSQL_PASSWORD_PRODUCTION,
-  database: env.NODE_ENV === "development" ? env.MYSQL_DATABASE_DEV : env.MYSQL_DATABASE_PRODUCTION,
+const isDev = env.NODE_ENV === "development";
+
+const db: Pool = createPool({
+  host: isDev ? env.MYSQL_HOST_DEV : env.MYSQL_HOST_PROD,
+  port: parseInt(isDev ? env.MYSQL_PORT_DEV : env.MYSQL_PORT_PROD, 10),
+  user: isDev ? env.MYSQL_USER_DEV : env.MYSQL_USER_PROD,
+  password: isDev ? env.MYSQL_PASSWORD_DEV : env.MYSQL_PASSWORD_PROD,
+  database: isDev ? env.MYSQL_DATABASE_DEV : env.MYSQL_DATABASE_PROD,
+
+  waitForConnections: true,
   connectionLimit: 10,
-  multipleStatements: true,
+  queueLimit: 0,
+
+  namedPlaceholders: true,
 });
 
-// Use promise-based pool for async/await queries
-export const db = mysqlPool.promise();
-
-// Optional: separate connection for transactions (typed)
-export const transactionConnection: PoolConnection = mysqlPool.getConnection((err: any, connection: any) => {
-  if (err) {
-    console.error("MySQL Connection Error", err);
+(async () => {
+  try {
+    const conn = await db.getConnection();
+    console.log("MySQL Connected");
+    conn.release();
+  } catch (err) {
+    console.error("MySQL Connection Failed:", err);
     process.exit(1);
   }
-  console.log("Connected to MySQL");
-  connection.release();
-}) as unknown as PoolConnection;
+})();
 
-// Handle unexpected errors in the pool
-mysqlPool.on("error", (err: any) => {
-  console.error("MySQL Pool Error", err);
-  process.exit(1);
-});
-
-export default mysqlPool;
+export default db;

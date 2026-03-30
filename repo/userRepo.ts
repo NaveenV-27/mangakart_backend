@@ -1,233 +1,240 @@
 import bcrypt from "bcrypt";
 import { UserProfile } from "../class/userClass";
-import mysqlPool from "../config/mysqlConfig";
-import util from "util";
+import db from "../config/mysqlConfig";
 import jwt from "jsonwebtoken";
 import { Response } from "express";
 
-
-let queryAsync = util.promisify(mysqlPool.query).bind(mysqlPool);
-
 class UserProfileRepo {
 
-	static async createUserProfile(
-		res: Response,
-		data: UserProfile,
-		callback: any
-	) {
+  // 🔥 CREATE USER
+  static async createUserProfile(
+    res: Response,
+    data: UserProfile,
+    callback: any
+  ) {
+    try {
+      const {
+        username,
+        full_name,
+        email,
+        phone_number,
+        password,
+        gender,
+        age
+      } = data;
 
-		try {
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-			const {
-				username,
-				full_name,
-				email,
-				phone_number,
-				password,
-				gender,
-				age
-			} = data;
+      const query = `
+        INSERT INTO users 
+        (username, full_name, email, phone_number, gender, age, password_hash) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
 
-			const hashedPassword = await bcrypt.hash(password, 10);
+      const [result]: any = await db.execute(query, [
+        username,
+        full_name,
+        email,
+        phone_number,
+        gender,
+        age,
+        hashedPassword,
+      ]);
 
-			const query = `INSERT INTO users (username, full_name, email, phone_number, gender,  age, password_hash) values (?, ?, ?, ?, ?, ?, ?)`;
-			const values = [username, full_name, email, phone_number, gender, age, hashedPassword];
-			const result = await queryAsync({ sql: query, values });
-			if (result) {
-				const payLoad = jwt.sign(
-					{
-						username: username,
-						email: email,
-					},
-					process.env.JWT_SECRET!,
-					{ expiresIn: "1d" }
-				);
-				res.cookie("USER", payLoad, {
-					httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 7 days
-				})
-				res.cookie("ROLE", "USER", {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				res.cookie("Name", full_name?.split(" ")?.['0'], {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				return callback({
-					apiSuccess: 1,
-					username,
-					message: "User profile created successfully"
-				})
-			} else {
-				return callback({
-					apiSuccess: 0,
-					message: result
-				})
-			}
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
+      if (result.affectedRows > 0) {
+        const payLoad = jwt.sign(
+          {
+            username,
+            email,
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: "1d" }
+        );
 
-	}
+        res.cookie("USER", payLoad, {
+          httpOnly: true,
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
-	static async userLogin(
-		data: {identifier : string; password : string},
-		res: Response,
-		callback: any
-	) {
-		try {
+        res.cookie("ROLE", "USER", {
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
-			const {
-				identifier,
-				password
-			} = data;
+        res.cookie("Name", full_name?.split(" ")?.[0], {
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
-			const query = `SELECT username, full_name, password_hash, email FROM users WHERE username = ? OR email = ?`;
-			const values = [identifier, identifier];
+        return callback({
+          apiSuccess: 1,
+          username,
+          message: "User profile created successfully",
+        });
+      } else {
+        return callback({
+          apiSuccess: 0,
+          message: "Failed to create user",
+        });
+      }
 
-			console.log(query, values);
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 
-			const response : any = await queryAsync({sql : query, values});
-			console.log("Response:" , response);
-			const passwordHash = Array.isArray(response)? response[0].password_hash : "";
-			const email = Array.isArray(response)? response[0].email : "";
-			const full_name = Array.isArray(response)? response[0].full_name : "";
-			const username = Array.isArray(response)? response[0].username : "";
-			const matched = await bcrypt.compare(password, passwordHash);
-			if(matched) {
+  // 🔐 LOGIN
+  static async userLogin(
+    data: { identifier: string; password: string },
+    res: Response,
+    callback: any
+  ) {
+    try {
+      const { identifier, password } = data;
 
-				const payLoad = jwt.sign(
-					{
-						username: username,
-						email: email,
-					},
-					process.env.JWT_SECRET!,
-					{ expiresIn: "1d" }
-				);
-				res.cookie("USER", payLoad, {
-					httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 7 days
-				})
-				res.cookie("ROLE", "USER", {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				res.cookie("Name", full_name?.split(" ")?.['0'], {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				return callback({
-					apiSuccess: 1,
-					message: "login successful",
-				})
-			} else {
-				return callback({
-					apiSuccess: 0,
-					message: "Incorrect password",
-				})
-				
-			}
+      const query = `
+        SELECT username, full_name, password_hash, email 
+        FROM users 
+        WHERE username = ? OR email = ?
+      `;
 
+      const [rows]: any = await db.execute(query, [identifier, identifier]);
 
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
-	}
+      if (!rows || rows.length === 0) {
+        return callback({
+          apiSuccess: 0,
+          message: "User not found",
+        });
+      }
 
-	static async checkUsername(
-		username: string,
-		callback: any
-	) {
-		try {
+      const user = rows[0];
 
-			const query = `SELECT EXISTS(SELECT 1 FROM users WHERE username = ?) AS username_exists;`;
-			const values = [username];
-			const response = await queryAsync({ sql: query, values });
+      const matched = await bcrypt.compare(password, user.password_hash);
 
-			const result = Array.isArray(response) ? response[0].username_exists : response;
-			if (result === 0) {
+      if (!matched) {
+        return callback({
+          apiSuccess: 0,
+          message: "Incorrect password",
+        });
+      }
 
-				return callback({
-					apiSuccess: 1,
-					message: "The given username is valid",
-					isValid: true
-				})
-			} else {
-				return callback({
-					apiSuccess: 1,
-					message: "the username is already taken",
-					isValid: false
-				})
+      const payLoad = jwt.sign(
+        {
+          username: user.username,
+          email: user.email,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
+      );
 
-			}
+      res.cookie("USER", payLoad, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
 
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
-	}
+      res.cookie("ROLE", "USER", {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
 
-	static async checkEmail(
-		email: string,
-		callback: any
-	) {
-		try {
+      res.cookie("Name", user.full_name?.split(" ")?.[0], {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
 
-			const query = `SELECT EXISTS(SELECT 1 FROM users WHERE email = ?) AS email_exists;`;
-			const values = [email];
-			const response = await queryAsync({ sql: query, values });
+      return callback({
+        apiSuccess: 1,
+        message: "login successful",
+      });
 
-			const result = Array.isArray(response) ? response[0].email_exists : response;
-			if (result === 0) {
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 
-				return callback({
-					apiSuccess: 1,
-					message: "The given email is valid",
-					isValid: true
-				})
-			} else {
-				return callback({
-					apiSuccess: 1,
-					message: "the email is already used",
-					isValid: false
-				})
+  // 🔍 CHECK USERNAME
+  static async checkUsername(username: string, callback: any) {
+    try {
+      const query = `
+        SELECT EXISTS(
+          SELECT 1 FROM users WHERE username = ?
+        ) AS username_exists
+      `;
 
-			}
+      const [rows]: any = await db.execute(query, [username]);
 
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
-	}
+      const exists = rows[0]?.username_exists;
 
-	static async getUserProfile(
-		username: string,
-		callback: any
-	) {
-		try {
-			const query = 'SELECT username, full_name, email, phone_number, gender, age from users WHERE username = ?';
-			const values = [username];
-			const response : any = await queryAsync({sql: query, values});
-			// console.log("user profile response", response);
-			return callback({
-				apiSuccess: 1,
-				message: "fetched user profile successfully",
-				data: response
-			})
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message
-			})
-		}
-	}
+      return callback({
+        apiSuccess: 1,
+        message: exists ? "Username already taken" : "Username is valid",
+        isValid: !exists,
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
+
+  // 📧 CHECK EMAIL
+  static async checkEmail(email: string, callback: any) {
+    try {
+      const query = `
+        SELECT EXISTS(
+          SELECT 1 FROM users WHERE email = ?
+        ) AS email_exists
+      `;
+
+      const [rows]: any = await db.execute(query, [email]);
+
+      const exists = rows[0]?.email_exists;
+
+      return callback({
+        apiSuccess: 1,
+        message: exists ? "Email already used" : "Email is valid",
+        isValid: !exists,
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
+
+  // 👤 GET PROFILE
+  static async getUserProfile(
+    username: string,
+    callback: any
+  ) {
+    try {
+      const query = `
+        SELECT username, full_name, email, phone_number, gender, age 
+        FROM users 
+        WHERE username = ?
+      `;
+
+      const [rows]: any = await db.execute(query, [username]);
+
+      return callback({
+        apiSuccess: 1,
+        message: "Fetched user profile successfully",
+        data: rows,
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 }
 
 export default UserProfileRepo;

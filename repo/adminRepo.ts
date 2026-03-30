@@ -1,202 +1,224 @@
 import bcrypt from "bcrypt";
 import { UserProfile } from "../class/userClass";
-import mysqlPool from "../config/mysqlConfig";
-import util from "util";
+import db from "../config/mysqlConfig";
 import jwt from "jsonwebtoken";
 import { Response } from "express";
 
-
-let queryAsync = util.promisify(mysqlPool.query).bind(mysqlPool);
-
 class AdminProfileRepo {
 
-	static async createAdminProfile(
-		res: Response,
-		data: UserProfile,
-		callback: any
-	) {
+  // 🔥 CREATE ADMIN
+  static async createAdminProfile(
+    res: Response,
+    data: UserProfile,
+    callback: any
+  ) {
+    try {
+      const {
+        username,
+        full_name,
+        email,
+        phone_number,
+        password,
+        gender,
+        age
+      } = data;
 
-		try {
+      const randomNumber = Math.floor(Math.random() * 100000);
+      const numericPart = String(randomNumber).padStart(5, "0");
+      const adminId = `ADM${numericPart}`;
 
-			const {
-				username,
-				full_name,
-				email,
-				phone_number,
-				password,
-				gender,
-				age
-			} = data;
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-			const randomNumber = Math.floor(Math.random() * 100000);
+      const query = `
+        INSERT INTO admins 
+        (admin_id, username, full_name, email, phone_number, gender, age, password_hash) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
 
-			const numericPart = String(randomNumber).padStart(5, '0');
+      const [result]: any = await db.execute(query, [
+        adminId,
+        username,
+        full_name,
+        email,
+        phone_number,
+        gender,
+        age,
+        hashedPassword,
+      ]);
 
-			const adminId = `ADM${numericPart}`;
+      if (result.affectedRows > 0) {
+        const payLoad = jwt.sign(
+          {
+            username,
+            admin_id: adminId,
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: "7d" }
+        );
 
-			const hashedPassword = await bcrypt.hash(password, 10);
+        res.cookie("ADMIN", payLoad, {
+          httpOnly: true,
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
-			const query = `INSERT INTO admins (admin_id, username, full_name, email, phone_number, gender,  age, password_hash) values (?, ?, ?, ?, ?, ?, ?, ?)`;
-			const values = [adminId, username, full_name, email, phone_number, gender, age, hashedPassword];
-			const result = await queryAsync({ sql: query, values });
-			if (result) {
-				const payLoad = jwt.sign(
-					{
-						username: username,
-						// email: email,
-						admin_id: adminId,
-					},
-					process.env.JWT_SECRET!,
-					{ expiresIn: "7d" }
-				);
-				res.cookie("ADMIN", payLoad, {
-					httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 1 day
-				})
+        res.cookie("ROLE", "ADMIN", {
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
 
-				res.cookie("ROLE", "ADMIN", {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				return callback({
-					apiSuccess: 1,
-					username,
-					admin_id: adminId,
-					message: "Admin profile created successfully"
-				})
-			} else {
-				return callback({
-					apiSuccess: 0,
-					message: result
-				})
-			}
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
+        return callback({
+          apiSuccess: 1,
+          username,
+          admin_id: adminId,
+          message: "Admin profile created successfully",
+        });
+      } else {
+        return callback({
+          apiSuccess: 0,
+          message: "Failed to create admin",
+        });
+      }
 
-	}
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 
-	static async checkUsername(
-		username: string,
-		callback: any
-	) {
-		try {
+  // 🔍 CHECK USERNAME
+  static async checkUsername(username: string, callback: any) {
+    try {
+      const query = `
+        SELECT EXISTS(
+          SELECT 1 FROM admins WHERE username = ?
+        ) AS username_exists
+      `;
 
-			const query = `SELECT EXISTS(SELECT 1 FROM admins WHERE username = ?) AS username_exists;`;
-			const values = [username];
-			const response = await queryAsync({ sql: query, values });
+      const [rows]: any = await db.execute(query, [username]);
 
-			const result = Array.isArray(response) ? response[0].username_exists : response;
-			if (result === 0) {
+      const exists = rows[0]?.username_exists;
 
-				return callback({
-					apiSuccess: 1,
-					message: "The given username is valid",
-					isValid: true
-				})
-			} else {
-				return callback({
-					apiSuccess: 1,
-					message: "the username is already taken",
-					isValid: false
-				})
+      if (exists === 0) {
+        return callback({
+          apiSuccess: 1,
+          message: "The given username is valid",
+          isValid: true,
+        });
+      } else {
+        return callback({
+          apiSuccess: 1,
+          message: "Username already taken",
+          isValid: false,
+        });
+      }
 
-			}
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
-	}
+  // 🔐 LOGIN
+  static async adminLogin(
+    data: { identifier: string; password: string },
+    res: Response,
+    callback: any
+  ) {
+    try {
+      const { identifier, password } = data;
 
-	static async adminLogin(
-		data: { identifier: string; password: string },
-		res: Response,
-		callback: any
-	) {
-		try {
+      const query = `
+        SELECT admin_id, username, full_name, password_hash, email 
+        FROM admins 
+        WHERE admin_id = ? OR username = ?
+      `;
 
-			const {
-				identifier,
-				password
-			} = data;
+      const [rows]: any = await db.execute(query, [identifier, identifier]);
 
-			const query = `SELECT admin_id, username, full_name, password_hash, email FROM admins WHERE admin_id = ? OR username = ?`;
-			const values = [identifier, identifier];
+      if (!rows || rows.length === 0) {
+        return callback({
+          apiSuccess: 0,
+          message: "Admin not found",
+        });
+      }
 
-			console.log(query, values);
+      const admin = rows[0];
 
-			const response: any = await queryAsync({ sql: query, values });
-			console.log("Response:", response);
-			const passwordHash = Array.isArray(response) ? response[0].password_hash : "";
-			const email = Array.isArray(response) ? response[0].email : "";
-			const full_name = Array.isArray(response) ? response[0].full_name : "";
-			const admin_id = Array.isArray(response) ? response[0].admin_id : "";
-			const username = Array.isArray(response) ? response[0].username : "";
-			const matched = await bcrypt.compare(password, passwordHash);
-			if (matched) {
-				const payLoad = jwt.sign(
-					{
-						username: username,
-						admin_id: admin_id,
-					},
-					process.env.JWT_SECRET!,
-					{ expiresIn: "1d" }
-				);
-				res.cookie("ADMIN", payLoad, {
-					httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7), // 7 days
-				})
-				res.cookie("ROLE", "ADMIN", {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				res.cookie("Name", full_name?.split(" ")?.['0'], {
-					expires: new Date(Date.now() + 24 * 60 * 60 * 1000 * 7),
-				})
-				return callback({
-					apiSuccess: 1,
-					message: "login successful",
-				})
-			} else {
-				return callback({
-					apiSuccess: 0,
-					message: "Incorrect password",
-				})
-			}
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message,
-			});
-		}
-	}
+      const matched = await bcrypt.compare(password, admin.password_hash);
 
-	static async getAdminProfile(
-		username: string,
-		admin_id: string,
-		callback: any
-	) {
-		try {
-			const query = 'SELECT username, admin_id, full_name, email, phone_number, gender, age from admins WHERE admin_id = ? OR username = ?';
-			const values = [admin_id, username];
-			const response : any = await queryAsync({sql: query, values});
-			// console.log("user profile response", response);
-			return callback({
-				apiSuccess: 1,
-				message: "fetched user profile successfully",
-				data: response
-			})
-		} catch (error: any) {
-			return callback({
-				apiSuccess: -1,
-				message: error.message
-			})
-		}
-	}
+      if (!matched) {
+        return callback({
+          apiSuccess: 0,
+          message: "Incorrect password",
+        });
+      }
+
+      const payLoad = jwt.sign(
+        {
+          username: admin.username,
+          admin_id: admin.admin_id,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
+      );
+
+      res.cookie("ADMIN", payLoad, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
+      res.cookie("ROLE", "ADMIN", {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
+      res.cookie("Name", admin.full_name?.split(" ")?.[0], {
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
+      return callback({
+        apiSuccess: 1,
+        message: "login successful",
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
+
+  // 👤 GET PROFILE
+  static async getAdminProfile(
+    username: string,
+    admin_id: string,
+    callback: any
+  ) {
+    try {
+      const query = `
+        SELECT username, admin_id, full_name, email, phone_number, gender, age 
+        FROM admins 
+        WHERE admin_id = ? OR username = ?
+      `;
+
+      const [rows]: any = await db.execute(query, [admin_id, username]);
+
+      return callback({
+        apiSuccess: 1,
+        message: "Fetched admin profile successfully",
+        data: rows,
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
+  }
 }
 
 export default AdminProfileRepo;

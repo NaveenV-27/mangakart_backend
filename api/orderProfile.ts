@@ -11,6 +11,15 @@ const sendRepoResponse = (res: Response, response: any) => {
   return res.status(400).json(response);
 };
 
+orderRouter.post("/create_order",
+	// validateUser,
+	asyncErrorHandler(async (req: any, res: Response) => {
+		const data = req.body;
+		await ordersRepo.createOrder(data, (response: any) => {
+			return sendRepoResponse(res, response);
+		});
+	})
+);
 orderRouter.post("/get_orders",
 	// validateUser,
 	asyncErrorHandler(async (req: any, res: Response) => {
