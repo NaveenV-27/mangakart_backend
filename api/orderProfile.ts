@@ -12,10 +12,11 @@ const sendRepoResponse = (res: Response, response: any) => {
 };
 
 orderRouter.post("/create_order",
-	// validateUser,
+	validateUser,
 	asyncErrorHandler(async (req: any, res: Response) => {
+		const user_id = req.user.username;
 		const data = req.body;
-		await ordersRepo.placeOrder(data, (response: any) => {
+		await ordersRepo.placeOrder(user_id, data, (response: any) => {
 			return sendRepoResponse(res, response);
 		});
 	})

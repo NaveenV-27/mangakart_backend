@@ -3,12 +3,11 @@ import db from "../config/mysqlConfig";
 class ordersRepo {
 
   // 🔥 CREATE ORDER
-  static async placeOrder(data: any, callback: any) {
+  static async placeOrder(user_id: string, data: any, callback: any) {
     const connection = await db.getConnection();
 
     try {
       const {
-        user_id,
         items,
         shipping_name,
         shipping_phone,

@@ -64,4 +64,16 @@ adminRouter.post("/get_admin_profile", validateUser,
 	}
 ))
 
+adminRouter.get("/admin_stats", 
+	validateUser,
+	asyncErrorHandler(async (req: any, res: Response) => {
+		const admin_id = req.user.admin_id;
+		await AdminProfileRepo.getAdminStats(admin_id, (response: any) => {
+			if (response.apiSuccess === 1) return res.status(200).json(response);
+			if (response.apiSuccess === -1) return res.status(500).json(response);
+			return res.status(400).json(response);
+		});
+	}
+))
+
 export default adminRouter;

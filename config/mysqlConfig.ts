@@ -39,6 +39,7 @@ const db: Pool = createPool({
 
 (async () => {
   try {
+    // console.log("HOST:", process.env.MYSQL_HOST_PRODUCTION, isDev);
     const conn = await db.getConnection();
     console.log("MySQL Connected");
     conn.release();

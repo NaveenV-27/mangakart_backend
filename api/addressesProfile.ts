@@ -11,7 +11,7 @@ const sendRepoResponse = (res: Response, response: any) => {
 	return res.status(400).json(response);
 };
 
-addressesRouter.post(
+addressesRouter.get(
 	"/get_addresses",
 	validateUser,
 	asyncErrorHandler(async (req: any, res: Response) => {

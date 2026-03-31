@@ -4,6 +4,8 @@ import db from "../config/mysqlConfig";
 import jwt from "jsonwebtoken";
 import { Response } from "express";
 
+import Volumes from "../MongoModels/Volume";
+
 class AdminProfileRepo {
 
   // 🔥 CREATE ADMIN
@@ -221,7 +223,46 @@ class AdminProfileRepo {
   }
 
   static async getAdminStats(admin_id: string, callback: any) {
-    
+    try {
+      const query = `
+        SELECT volume_id, count(volume_id) as vol_count
+        from order_items where seller_id= ? group by volume_id order by vol_count desc;
+      `;
+
+      const [topVolumes]: any = await db.execute(query, [admin_id]);
+      console.log("Admin stats rows:", topVolumes);
+
+      const volumeIds = topVolumes.map((v: any) => v.volume_id);
+
+      const volumes = await Volumes.find({
+        volume_id: { $in: volumeIds }
+      });
+
+      const volumeMap = new Map();
+
+      volumes.forEach(v => {
+        volumeMap.set(v.volume_id, v);
+      });
+
+      const result = topVolumes.map((v: any) => ({
+        volume_id: v.volume_id,
+        total_sold: v.total_sold,
+        volume_title: volumeMap.get(v.volume_id)?.volume_title,
+        manga_id: volumeMap.get(v.volume_id)?.manga_id,
+      }));
+
+      return callback({
+        apiSuccess: 1,
+        message: "Fetched admin stats successfully",
+        data: result,
+      });
+
+    } catch (error: any) {
+      return callback({
+        apiSuccess: -1,
+        message: error.message,
+      });
+    }
   }
 }
 

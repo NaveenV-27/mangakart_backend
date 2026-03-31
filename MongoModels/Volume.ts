@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const VolumeProfile = new mongoose.Schema({
     manga_id: { type: String, required: true },
+    manga_title: { type: String, required: true },
     volume_id: { type: String, required: true, unique : true },
     volume_title: { type: String, required: true },
     volume_number : { type: Number, required: true },
