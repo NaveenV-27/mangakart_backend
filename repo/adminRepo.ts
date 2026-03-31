@@ -162,7 +162,7 @@ class AdminProfileRepo {
           admin_id: admin.admin_id,
         },
         process.env.JWT_SECRET!,
-        { expiresIn: "1d" }
+        { expiresIn: "7d" }
       );
 
       res.cookie("ADMIN", payLoad, {
@@ -218,6 +218,10 @@ class AdminProfileRepo {
         message: error.message,
       });
     }
+  }
+
+  static async getAdminStats(admin_id: string, callback: any) {
+    
   }
 }
 

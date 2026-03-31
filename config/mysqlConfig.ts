@@ -10,11 +10,11 @@ interface MySQLEnv {
   MYSQL_PASSWORD_DEV: string;
   MYSQL_DATABASE_DEV: string;
 
-  MYSQL_HOST_PROD: string;
-  MYSQL_PORT_PROD: string;
-  MYSQL_USER_PROD: string;
-  MYSQL_PASSWORD_PROD: string;
-  MYSQL_DATABASE_PROD: string;
+  MYSQL_HOST_PRODUCTION: string;
+  MYSQL_PORT_PRODUCTION: string;
+  MYSQL_USER_PRODUCTION: string;
+  MYSQL_PASSWORD_PRODUCTION: string;
+  MYSQL_DATABASE_PRODUCTION: string;
 
   NODE_ENV: "development" | "production";
 }
@@ -24,11 +24,11 @@ const env = process.env as unknown as MySQLEnv;
 const isDev = env.NODE_ENV === "development";
 
 const db: Pool = createPool({
-  host: isDev ? env.MYSQL_HOST_DEV : env.MYSQL_HOST_PROD,
-  port: parseInt(isDev ? env.MYSQL_PORT_DEV : env.MYSQL_PORT_PROD, 10),
-  user: isDev ? env.MYSQL_USER_DEV : env.MYSQL_USER_PROD,
-  password: isDev ? env.MYSQL_PASSWORD_DEV : env.MYSQL_PASSWORD_PROD,
-  database: isDev ? env.MYSQL_DATABASE_DEV : env.MYSQL_DATABASE_PROD,
+  host: isDev ? env.MYSQL_HOST_DEV : env.MYSQL_HOST_PRODUCTION,
+  port: parseInt(isDev ? env.MYSQL_PORT_DEV : env.MYSQL_PORT_PRODUCTION, 10),
+  user: isDev ? env.MYSQL_USER_DEV : env.MYSQL_USER_PRODUCTION,
+  password: isDev ? env.MYSQL_PASSWORD_DEV : env.MYSQL_PASSWORD_PRODUCTION,
+  database: isDev ? env.MYSQL_DATABASE_DEV : env.MYSQL_DATABASE_PRODUCTION,
 
   waitForConnections: true,
   connectionLimit: 10,

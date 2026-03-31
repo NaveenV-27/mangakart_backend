@@ -15,7 +15,7 @@ orderRouter.post("/create_order",
 	// validateUser,
 	asyncErrorHandler(async (req: any, res: Response) => {
 		const data = req.body;
-		await ordersRepo.createOrder(data, (response: any) => {
+		await ordersRepo.placeOrder(data, (response: any) => {
 			return sendRepoResponse(res, response);
 		});
 	})

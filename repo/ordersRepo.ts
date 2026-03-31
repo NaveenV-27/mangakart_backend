@@ -3,7 +3,7 @@ import db from "../config/mysqlConfig";
 class ordersRepo {
 
   // 🔥 CREATE ORDER
-  static async createOrder(data: any, callback: any) {
+  static async placeOrder(data: any, callback: any) {
     const connection = await db.getConnection();
 
     try {
