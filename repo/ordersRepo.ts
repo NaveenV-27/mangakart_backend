@@ -186,6 +186,92 @@ class ordersRepo {
       });
     }
   }
+
+  static async getOrderDetails(order_id: string, callback: any) {
+    try {
+      const query = `
+        SELECT 
+          o.order_id,
+          o.user_id,
+          o.total_amount,
+          o.order_status,
+          o.payment_status,
+          o.shipping_name,
+          o.shipping_phone,
+          o.shipping_address,
+          o.shipping_city,
+          o.shipping_pincode,
+          o.created_at AS order_created_at,
+
+          oi.id AS item_id,
+          oi.volume_id,
+          oi.seller_id,
+          oi.volume_title,
+          oi.price_at_purchase,
+          oi.quantity,
+          oi.created_at AS item_created_at
+
+        FROM orders o
+        LEFT JOIN order_items oi
+          ON o.order_id = oi.order_id
+        WHERE o.order_id = ?
+      `;
+
+      const [rows]: any = await db.execute(query, [order_id]);
+      console.log("Fetched order details:", rows);
+
+      if (!rows || rows.length === 0) {
+        return callback({
+          apiSuccess: 0,
+          message: "Order not found",
+        });
+      }
+
+      const orderDetails = {
+        order_id: rows[0].order_id,
+        user_id: rows[0].user_id,
+        total_amount: rows[0].total_amount,
+        order_status: rows[0].order_status,
+        payment_status: rows[0].payment_status,
+        shipping_name: rows[0].shipping_name,
+        shipping_phone: rows[0].shipping_phone,
+        shipping_address: rows[0].shipping_address,
+        shipping_city: rows[0].shipping_city,
+        shipping_pincode: rows[0].shipping_pincode,
+        created_at: rows[0].order_created_at,
+        orderItems: [] as any[],
+      };
+
+      for (const row of rows) {
+        if (row.item_id) {
+          orderDetails.orderItems.push({
+            id: row.item_id,
+            order_id: row.order_id,
+            volume_id: row.volume_id,
+            seller_id: row.seller_id,
+            volume_title: row.volume_title,
+            price_at_purchase: row.price_at_purchase,
+            quantity: row.quantity,
+            created_at: row.item_created_at,
+          });
+        }
+      }
+
+      return callback({
+        apiSuccess: 1,
+        order: orderDetails,
+        message: "Order details retrieved successfully",
+      });
+
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+
+      return callback({
+        apiSuccess: 0,
+        message: "Failed to retrieve order details",
+      });
+    }
+  }
 }
 
 export default ordersRepo;

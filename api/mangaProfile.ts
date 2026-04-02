@@ -179,9 +179,12 @@ mangaRouter.post("/search_manga", async (req : Request, res : Response, next: Ne
       title: { $regex: searchTerm, $options: "i" }
     }, {
       manga_id: 1,
-      title: 1
+      title: 1,
+      cover_image: 1,
+      rating: 1,
+      authors: 1,
     }).skip(offset * 10).limit(limit);
-    console.log("Search results: ", results);
+    // console.log("Search results: ", results);
     res.json({
       message:"Search results obtained successfully",
       results: results

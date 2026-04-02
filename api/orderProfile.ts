@@ -21,11 +21,22 @@ orderRouter.post("/create_order",
 		});
 	})
 );
-orderRouter.post("/get_orders",
-	// validateUser,
+orderRouter.get("/get_orders",
+	validateUser,
 	asyncErrorHandler(async (req: any, res: Response) => {
-		const user_id = req.body.username;
+		const user_id = req.user.username;
 		await ordersRepo.getOrders(user_id, (response: any) => {
+			return sendRepoResponse(res, response);
+		});
+	})
+);
+orderRouter.get("/get_order/:order_id",
+	validateUser,
+	asyncErrorHandler(async (req: any, res: Response) => {
+		const user_id = req.user.username;
+		const order_id = req.params.order_id;
+		console.log("Fetching details for order:", order_id, "for user:", user_id);
+		await ordersRepo.getOrderDetails(order_id, (response: any) => {
 			return sendRepoResponse(res, response);
 		});
 	})
