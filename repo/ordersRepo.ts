@@ -4,6 +4,7 @@ class ordersRepo {
 
   // 🔥 CREATE ORDER
   static async placeOrder(user_id: string, data: any, callback: any) {
+    console.log("Placing order for user:", user_id, "with data:", data);
     const connection = await db.getConnection();
 
     try {
@@ -33,7 +34,6 @@ class ordersRepo {
 
       await connection.beginTransaction();
 
-      // 🧾 Insert Order
       const orderQuery = `
         INSERT INTO orders (
           order_id,
@@ -82,7 +82,6 @@ class ordersRepo {
         ]);
       }
 
-      // ✅ COMMIT
       await connection.commit();
 
       return callback({
@@ -105,7 +104,6 @@ class ordersRepo {
     }
   }
 
-  // 🔍 GET ORDERS
   static async getOrders(user_id: string, callback: any) {
     try {
       const query = `

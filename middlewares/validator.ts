@@ -25,7 +25,7 @@ export const validateUser = (
       admin_id: decoded.admin_id,
       role: req.cookies?.ROLE,
     };
-    console.log("Body:", req.user)
+    // console.log("Body:", req.user)
     next();
   } catch (error :any) {
     console.error("Token verification failed:", error.message);
