@@ -46,7 +46,7 @@ app.post('/get-response', (req, res) => {
 });
 
 const domain = process.env.DOMAIN || "localhost"
-const PORT : number = (process.env.PORT || 4000) as number;
-app.listen(PORT, domain, () => {
+const PORT = Number(process.env.PORT) || 4000;
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://${domain}:${PORT}`);
 });
