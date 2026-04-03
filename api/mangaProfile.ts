@@ -2,9 +2,11 @@ import express from "express";
 import { Router, Request, Response, NextFunction } from 'express';
 import MangaProfile from "../MongoModels/Manga";
 import { validateUser } from "../middlewares/validator";
-// import multer from "multer";
-// import cloudinary from '../config/cloudinary';
-// import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import multer from "multer";
+import cloudinary from '../config/cloudinary';
+
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+
 
 interface Manga {
     manga_id: string;
@@ -23,15 +25,15 @@ interface Manga {
 
 
 // Configure multer-storage-cloudinary
-// const storage = new CloudinaryStorage({
-//   cloudinary: cloudinary,
-//   params: {
-//     folder: 'uploads',
-//     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'avif'],
-//   } as any,                   
-// });
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req: any, file: any) => ({
+    folder: "uploads",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "avif"],
+  }),
+});
 
-// const upload = multer({ storage: storage });
+const upload = multer({ storage: storage });
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -83,7 +85,7 @@ mangaRouter.post("/find_manga_by_genre", async (req : Request, res : Response, n
 mangaRouter.post(
   "/create_manga",
   validateUser,
-  // upload.single('cover_image'), // match the input file field name from the form
+  upload.single('cover_image'), // match the input file field name from the form
   async (req: MulterRequest, res: Response, next: NextFunction) => {
     try {
       console.log('Received:', req.body);

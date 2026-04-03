@@ -4,7 +4,7 @@ class ordersRepo {
 
   // 🔥 CREATE ORDER
   static async placeOrder(user_id: string, data: any, callback: any) {
-    console.log("Placing order for user:", user_id, "with data:", data);
+    // console.log("Placing order for user:", user_id, "with data:", data);
     const connection = await db.getConnection();
 
     try {

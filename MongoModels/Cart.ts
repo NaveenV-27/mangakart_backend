@@ -28,6 +28,7 @@ const CartSchema = new Schema<Cart>(
 
         cover_image: { type: String, required: true },
         price: { type: Number, required: true },
+        seller_id: { type: String, required: true },
         quantity: { type: Number, default: 1 }
       }
     ]

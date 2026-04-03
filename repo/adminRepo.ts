@@ -249,6 +249,7 @@ class AdminProfileRepo {
         total_sold: v.total_sold,
         volume_title: volumeMap.get(v.volume_id)?.volume_title,
         manga_id: volumeMap.get(v.volume_id)?.manga_id,
+        manga_title: volumeMap.get(v.volume_id)?.manga_title,
       }));
 
       return callback({

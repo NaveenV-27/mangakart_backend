@@ -2,30 +2,30 @@ import express from "express";
 import { Router, Request, Response, NextFunction } from 'express';
 import volumeProfile from "../MongoModels/Volume";
 import { validateUser } from "../middlewares/validator";
-// import multer from "multer";
-// import cloudinary from '../config/cloudinary';
-// import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import multer from "multer";
+import cloudinary from '../config/cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 // Configure multer-storage-cloudinary
-// const storage = new CloudinaryStorage({
-//   cloudinary: cloudinary,
-//   params: {
-//     folder: 'uploads',
-//     allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'avif'],
-//   } as any,                   
-// });
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'uploads',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'avif'],
+  } as any,                   
+});
 
-// const upload = multer({ storage: storage });
+const upload = multer({ storage: storage });
 
-// interface MulterRequest extends Request {
-//   file?: Express.Multer.File;
-// }
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
 const volumeRouter = express.Router();
 
 volumeRouter.post(
   "/create_volume",
   validateUser,
-  // upload.single('cover_image'), // match the input file field name from the form
+  upload.single('cover_image'), // match the input file field name from the form
   async (req: any, res: Response, next: NextFunction) => {
     try {
       console.log("Request recieved:", req.body);
